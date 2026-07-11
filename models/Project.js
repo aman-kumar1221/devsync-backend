@@ -1,37 +1,51 @@
 const mongoose = require('mongoose');
 
 const projectSchema = new mongoose.Schema({
-  title: {
-    type: String,
-    required: true,
-    trim: true
+  title: { 
+    type: String, 
+    required: true 
   },
-  description: {
-    type: String,
-    required: true
+  description: { 
+    type: String, 
+    required: true 
   },
-  creator: {
-    type: mongoose.Schema.Types.ObjectId,
+  creator: { 
+    type: mongoose.Schema.Types.ObjectId, 
     ref: 'User', 
-    required: true
+    required: true 
   },
-  requiredTechStack: {
-    type: [String],
-    default: []
+  requiredTechStack: [{ 
+    type: String 
+  }],
+  timeline: { 
+    type: String 
   },
-  timeline: {
-    type: String // e.g., "2 weeks", "1 month"
-  },
-  status: {
-    type: String,
-    enum: ['recruiting', 'in-progress', 'completed'],
-    default: 'recruiting'
-  },
-  teamMembers: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }]
+  teamMembers: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  }],
+  // Social Engagement Fields
+  likes: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User' 
+  }], 
+  comments: [
+    {
+      user: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User', 
+        required: true 
+      },
+      text: { 
+        type: String, 
+        required: true 
+      },
+      createdAt: { 
+        type: Date, 
+        default: Date.now 
+      }
+    }
+  ]
 }, { timestamps: true });
 
-const Project = mongoose.model('Project', projectSchema);
-module.exports = Project;
+module.exports = mongoose.models.Project || mongoose.model('Project', projectSchema);
