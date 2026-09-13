@@ -2,21 +2,31 @@ const Application = require('../models/Application');
 const Project = require('../models/Project');
 
 // APPLY TO A PROJECT TEAM
+// APPLY TO A PROJECT TEAM
 const applyToProject = async (req, res) => {
   try {
-    const { projectId, coverNote } = req.body;
+    const { projectId, requestedRole, note } = req.body;
 
-    const existingApp = await Application.findOne({ project: projectId, applicant: req.user.userId });
-    if (existingApp) return res.status(400).json({ message: 'You have already applied to this project' });
+    const existingApp = await Application.findOne({ 
+      project: projectId, 
+      applicant: req.user.userId 
+    });
+    if (existingApp) {
+      return res.status(400).json({ message: 'You have already applied to this project' });
+    }
 
     const newApplication = new Application({
       project: projectId,
       applicant: req.user.userId,
-      coverNote
+      requestedRole,
+      note
     });
 
     await newApplication.save();
-    res.status(201).json({ message: 'Application submitted successfully!', application: newApplication });
+    res.status(201).json({ 
+      message: 'Application submitted successfully!', 
+      application: newApplication 
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
