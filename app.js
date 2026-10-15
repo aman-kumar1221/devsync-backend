@@ -16,10 +16,16 @@ const chatRoutes = require('./routes/chatRoutes');
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.io with CORS
+// Define allowed origins for both local testing and production frontend
+const allowedOrigins = [
+  'http://localhost:5173',
+  process.env.FRONTEND_URL, // Set this in Render dashboard once the frontend is deployed
+].filter(Boolean); // Removes undefined values if FRONTEND_URL isn't set yet
+
+// Initialize Socket.io with dynamic CORS
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173', // Your friend's Vite port
+    origin: allowedOrigins,
     credentials: true,
   },
 });
@@ -35,7 +41,14 @@ mongoose
 // Middlewares
 app.use(
   cors({
-    origin: 'http://localhost:5173',
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl, or Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.indexOf(origin) === -1) {
+        return callback(new Error('Blocked by CORS policy'), false);
+      }
+      return callback(null, true);
+    },
     credentials: true,
   })
 );
@@ -64,24 +77,25 @@ io.on('connection', (socket) => {
     socket.join(projectId);
     console.log(`👤 Socket ${socket.id} joined room: ${projectId}`);
   });
-// User sends a message
-socket.on('send_message', async (data) => {
-  try {
-    const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
 
-    const savedMessage = await Message.create({
-      projectId: parsedData.projectId,
-      sender: parsedData.sender,
-      senderName: parsedData.senderName,
-      text: parsedData.text,
-    });
+  // User sends a message
+  socket.on('send_message', async (data) => {
+    try {
+      const parsedData = typeof data === 'string' ? JSON.parse(data) : data;
 
-    // Broadcast message to everyone in the project room
-    io.to(parsedData.projectId).emit('receive_message', savedMessage);
-  } catch (err) {
-    console.error('Socket message save error:', err);
-  }
-});
+      const savedMessage = await Message.create({
+        projectId: parsedData.projectId,
+        sender: parsedData.sender,
+        senderName: parsedData.senderName,
+        text: parsedData.text,
+      });
+
+      // Broadcast message to everyone in the project room
+      io.to(parsedData.projectId).emit('receive_message', savedMessage);
+    } catch (err) {
+      console.error('Socket message save error:', err);
+    }
+  });
 
   socket.on('disconnect', () => {
     console.log(`❌ Socket disconnected: ${socket.id}`);
